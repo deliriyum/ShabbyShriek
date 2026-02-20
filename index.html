@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shabby Shriek — Something Wicked This Way Loads</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Share+Tech+Mono&display=swap');
+
+    :root {
+      --blood: #8b0000;
+      --red: #cc0000;
+      --bright-red: #ff2200;
+      --dark: #0a0a0a;
+      --darker: #050505;
+      --fog: #1a1a1a;
+      --text: #c9b99a;
+      --dim: #5a4a3a;
+      --green: #00ff41;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--darker);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Scanlines overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.15) 2px,
+        rgba(0,0,0,0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+      pointer-events: none;
+      z-index: 9;
+    }
+
+    .noise {
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      animation: drift 8s linear infinite;
+      pointer-events: none;
+      z-index: 8;
+    }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(5%, 5%); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 20;
+      text-align: center;
+      padding: 2rem;
+      max-width: 700px;
+    }
+
+    .logo {
+      font-family: 'UnifrakturMaguntia', cursive;
+      font-size: clamp(3rem, 10vw, 6rem);
+      color: var(--text);
+      text-shadow:
+        0 0 10px rgba(139,0,0,0.8),
+        0 0 30px rgba(139,0,0,0.4),
+        2px 2px 0 var(--blood);
+      margin-bottom: 0.25rem;
+      letter-spacing: 2px;
+      animation: flicker 8s infinite;
+    }
+
+    @keyframes flicker {
+      0%, 95%, 100% { opacity: 1; }
+      96% { opacity: 0.85; }
+      97% { opacity: 1; }
+      98% { opacity: 0.7; }
+      99% { opacity: 1; }
+    }
+
+    .tagline {
+      font-size: 0.75rem;
+      color: var(--dim);
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      margin-bottom: 3rem;
+    }
+
+    .terminal-box {
+      border: 1px solid var(--blood);
+      background: rgba(10,0,0,0.6);
+      padding: 2rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      box-shadow:
+        0 0 15px rgba(139,0,0,0.3),
+        inset 0 0 30px rgba(0,0,0,0.5);
+    }
+
+    .terminal-box::before {
+      content: '[ SYSTEM MESSAGE ]';
+      position: absolute;
+      top: -0.6em;
+      left: 1rem;
+      font-size: 0.7rem;
+      color: var(--blood);
+      background: var(--darker);
+      padding: 0 0.5rem;
+      letter-spacing: 0.2em;
+    }
+
+    .terminal-text {
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      line-height: 1.9;
+      color: var(--text);
+    }
+
+    .terminal-text .cursor {
+      display: inline-block;
+      width: 0.6em;
+      height: 1.1em;
+      background: var(--text);
+      vertical-align: text-bottom;
+      animation: blink 1.1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .status-line {
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      margin-bottom: 0.4rem;
+    }
+
+    .status-line .ok { color: var(--green); }
+    .status-line .pending { color: #ff9900; }
+
+    /* THE BUTTON */
+    .button-wrap {
+      margin: 2rem 0;
+    }
+
+    .do-nothing-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--blood);
+      border: 2px solid var(--bright-red);
+      padding: 1rem 2.5rem;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.1s;
+      box-shadow:
+        0 0 20px rgba(204,0,0,0.5),
+        0 4px 0 #4a0000,
+        inset 0 1px 0 rgba(255,100,100,0.2);
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    .do-nothing-btn:hover {
+      background: var(--red);
+      box-shadow:
+        0 0 35px rgba(255,34,0,0.7),
+        0 4px 0 #4a0000,
+        inset 0 1px 0 rgba(255,100,100,0.3);
+      transform: translateY(-2px);
+    }
+
+    .do-nothing-btn:active {
+      transform: translateY(2px);
+      box-shadow:
+        0 0 15px rgba(204,0,0,0.4),
+        0 1px 0 #4a0000;
+    }
+
+    .button-label {
+      font-size: 0.6rem;
+      color: var(--dim);
+      margin-top: 0.5rem;
+      letter-spacing: 0.2em;
+    }
+
+    /* Response messages shown after button click */
+    .response-msg {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--green);
+      min-height: 1.5em;
+      letter-spacing: 0.05em;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .response-msg.visible {
+      opacity: 1;
+    }
+
+    .footer {
+      margin-top: 3rem;
+      font-size: 0.65rem;
+      color: var(--dim);
+      letter-spacing: 0.25em;
+    }
+
+    .footer a {
+      color: var(--blood);
+      text-decoration: none;
+    }
+    .footer a:hover { color: var(--bright-red); }
+
+    /* Decorative corner marks */
+    .corner {
+      position: fixed;
+      width: 40px;
+      height: 40px;
+      z-index: 20;
+      opacity: 0.4;
+    }
+    .corner.tl { top: 1rem; left: 1rem; border-top: 1px solid var(--blood); border-left: 1px solid var(--blood); }
+    .corner.tr { top: 1rem; right: 1rem; border-top: 1px solid var(--blood); border-right: 1px solid var(--blood); }
+    .corner.bl { bottom: 1rem; left: 1rem; border-bottom: 1px solid var(--blood); border-left: 1px solid var(--blood); }
+    .corner.br { bottom: 1rem; right: 1rem; border-bottom: 1px solid var(--blood); border-right: 1px solid var(--blood); }
+
+  </style>
+</head>
+<body>
+
+  <div class="noise"></div>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="container">
+
+    <div class="logo">Shabby Shriek</div>
+    <div class="tagline" id="tagline"></div>
+
+    <div class="terminal-box">
+      <div class="status-line">
+        <span class="ok">▶ SIGNAL_DETECTED</span> .................. <span class="ok">CONFIRMED</span>
+      </div>
+      <div class="status-line">
+        <span class="pending">▶ INVENTORY_MANIFEST</span> ............. <span class="pending">LOADING</span>
+      </div>
+      <div class="status-line">
+        <span class="pending">▶ SHOP_PORTAL</span> .................... <span class="pending">COMPILING</span>
+      </div>
+      <br/>
+      <div class="terminal-text">
+        Something wicked is being hand-forged, laser-etched,
+        and otherwise summoned into existence.<br/><br/>
+        We are <em>not</em> dead. We are <em>building</em>.<br/>
+        Check back soon — or don't, and be surprised.<span class="cursor"></span>
+      </div>
+    </div>
+
+    <div class="button-wrap">
+      <button class="do-nothing-btn" id="theButton" onclick="pressButton()">
+        ⬛ INITIATE SOMETHING ⬛
+      </button>
+      <div class="button-label">[ WARNING: BUTTON MAY OR MAY NOT DO SOMETHING ]</div>
+      <div class="response-msg" id="responseMsg"></div>
+    </div>
+
+    <div class="footer">
+      &copy; SHABBY SHRIEK — HANDCRAFTED GOODS — EST. MMXXV<br/>
+      <br/>
+      <a href="mailto:hello@shabbyshriek.com">hello@shabbyshriek.com</a>
+    </div>
+
+  </div>
+
+  <script>
+    const taglines = [
+      "Handcrafted. Haunted. Yours.",
+      "Hand-forged. Laser-etched. Slightly cursed.",
+      "Beautiful things for difficult people.",
+      "Making pretty things in the dark.",
+      "Not everything beautiful has to be bright.",
+      "Crafted from the void. Delivered to your door.",
+      "Handmade goods for the aesthetically cursed.",
+      "For people who think autumn should be permanent.",
+      "For the home that screams.",
+      "Forged in a workshop. Haunted at no extra charge.",
+      "Built by hand. Blessed by nobody.",
+      "We made you something. You probably deserve it.",
+      "Goth-adjacent. Legally distinct from a curse.",
+    ];
+
+    document.getElementById('tagline').textContent =
+      taglines[Math.floor(Math.random() * taglines.length)];
+
+    const responses = [
+      "ERROR: Nothing to do. Doing it anyway.",
+      "[ INITIATING SOMETHING... ] ...just kidding.",
+      "ACTION QUEUED. Position in queue: ∞",
+      "BUTTON PRESSED. Universe: unimpressed.",
+      "SYSTEM: Oh you thought that would do something?",
+      "PROCESS STARTED: /dev/null — output redirected to void",
+      "COMPILING... 0% ........... still 0%",
+      "NOTHING HAS BEEN SUMMONED. (this time)",
+      "ALERT: Unexpected nothing. Continuing.",
+      "kernel panic — not syncing: ennui",
+      "REQUEST DENIED. Reason: vibes.",
+      "sudo do-the-thing: command not found",
+      "TASK COMPLETE: Nothing accomplished successfully.",
+    ];
+
+    let lastIdx = -1;
+
+    function pressButton() {
+      let idx;
+      do { idx = Math.floor(Math.random() * responses.length); }
+      while (idx === lastIdx);
+      lastIdx = idx;
+
+      const msg = document.getElementById('responseMsg');
+      msg.classList.remove('visible');
+      setTimeout(() => {
+        msg.textContent = '> ' + responses[idx];
+        msg.classList.add('visible');
+      }, 80);
+    }
+  </script>
+
+</body>
+</html>
