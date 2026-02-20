@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shabby Shriek — Something Wicked This Way Loads</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Share+Tech+Mono&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Share+Tech+Mono&family=Cinzel:wght@700&display=swap');
 
     :root {
       --blood: #8b0000;
@@ -86,6 +86,15 @@
       max-width: 700px;
     }
 
+    .logo-wrap {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 0.5rem;
+      /* extra bottom padding so the forward-shifted shadow isn't clipped */
+      padding-bottom: 0.4em;
+    }
+
+    /* Blackletter — now behind */
     .logo {
       font-family: 'UnifrakturMaguntia', cursive;
       font-size: clamp(3rem, 10vw, 6rem);
@@ -94,9 +103,32 @@
         0 0 10px rgba(139,0,0,0.8),
         0 0 30px rgba(139,0,0,0.4),
         2px 2px 0 var(--blood);
-      margin-bottom: 0.25rem;
       letter-spacing: 2px;
       animation: flicker 8s infinite;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Cinzel ghost — wider kerning, lower, and in FRONT */
+    .logo-shadow {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: clamp(3rem, 10vw, 6rem);
+      letter-spacing: 0.04em;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(160,20,20,0.55);
+      background: linear-gradient(180deg, rgba(120,0,0,0.6) 0%, rgba(60,0,0,0.25) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      position: absolute;
+      /* shifted down and slightly right — peeking out below */
+      top: 14px;
+      left: 4px;
+      white-space: nowrap;
+      user-select: none;
+      pointer-events: none;
+      /* IN FRONT of the blackletter */
+      z-index: 2;
     }
 
     @keyframes flicker {
@@ -168,12 +200,11 @@
     .status-line .ok { color: var(--green); }
     .status-line .pending { color: #ff9900; }
 
-    /* THE BUTTON */
+    /* THE BUTTON - ROUND */
     .button-wrap {
       margin: 2rem 0;
     }
 
-    /* outer housing / bezel */
     .button-housing {
       display: inline-block;
       background: #1a0000;
@@ -291,7 +322,10 @@
 
   <div class="container">
 
-    <div class="logo">Shabby Shriek</div>
+    <div class="logo-wrap">
+      <div class="logo-shadow">Shabby Shriek</div>
+      <div class="logo">Shabby Shriek</div>
+    </div>
     <div class="tagline" id="tagline"></div>
 
     <div class="terminal-box">
