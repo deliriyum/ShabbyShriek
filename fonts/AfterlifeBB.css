@@ -1,0 +1,12 @@
+/* Webfont: AfterlifeBB */@font-face {
+    font-family: 'AfterlifeBB';
+    src: url('AfterlifeBB.eot'); /* IE9 Compat Modes */
+    src: url('AfterlifeBB.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+         url('AfterlifeBB.woff') format('woff'), /* Modern Browsers */
+         url('AfterlifeBB.ttf') format('truetype'), /* Safari, Android, iOS */
+         url('AfterlifeBB.svg#AfterlifeBB') format('svg'); /* Legacy iOS */
+    font-style: normal;
+    font-weight: normal;
+    text-rendering: optimizeLegibility;
+}
+
