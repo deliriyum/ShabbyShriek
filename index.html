@@ -6,7 +6,16 @@
   <title>Shabby Shriek — Something Wicked This Way Loads</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Share+Tech+Mono&family=Cinzel:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@700&display=swap');
+
+    @font-face {
+      font-family: 'AfterlifeBB';
+      src: url('fonts/AfterlifeBB.woff') format('woff'),
+           url('fonts/AfterlifeBB.ttf') format('truetype');
+      font-style: normal;
+      font-weight: normal;
+      text-rendering: optimizeLegibility;
+    }
 
     :root {
       --blood: #8b0000;
@@ -93,7 +102,7 @@
     }
 
     .logo {
-      font-family: 'UnifrakturMaguntia', cursive;
+      font-family: 'AfterlifeBB', serif;
       font-size: clamp(3rem, 10vw, 6rem);
       color: var(--text);
       text-shadow:
