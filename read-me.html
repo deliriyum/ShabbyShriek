@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shabby Shriek — Tempus Frangit</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400&display=swap');
+
+    @font-face {
+      font-family: 'AfterlifeBB';
+      src: url('fonts/AfterlifeBB.woff') format('woff'),
+           url('fonts/AfterlifeBB.ttf') format('truetype');
+      font-style: normal;
+      font-weight: normal;
+      text-rendering: optimizeLegibility;
+    }
+
+    :root {
+      --blood: #8b0000;
+      --red: #cc0000;
+      --bright-red: #ff2200;
+      --darker: #050505;
+      --text: #c9b99a;
+      --dim: #5a4a3a;
+      --green: #00ff41;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--darker);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+      padding: 2rem 0 5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+      pointer-events: none;
+      z-index: 9;
+    }
+
+    .corner {
+      position: fixed;
+      width: 40px; height: 40px;
+      z-index: 20; opacity: 0.4;
+    }
+    .corner.tl { top:1rem; left:1rem; border-top:1px solid var(--blood); border-left:1px solid var(--blood); }
+    .corner.tr { top:1rem; right:1rem; border-top:1px solid var(--blood); border-right:1px solid var(--blood); }
+    .corner.bl { bottom:1rem; left:1rem; border-bottom:1px solid var(--blood); border-left:1px solid var(--blood); }
+    .corner.br { bottom:1rem; right:1rem; border-bottom:1px solid var(--blood); border-right:1px solid var(--blood); }
+
+    .container {
+      position: relative;
+      z-index: 20;
+      width: 100%;
+      max-width: 680px;
+      padding: 0 2rem;
+      text-align: center;
+    }
+
+    .back-link {
+      display: block;
+      text-align: left;
+      font-size: 0.65rem;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+      text-decoration: none;
+      margin-bottom: 2.5rem;
+    }
+    .back-link:hover { color: var(--blood); }
+
+    .page-title {
+      font-family: 'AfterlifeBB', serif;
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      color: var(--text);
+      text-shadow:
+        0 0 10px rgba(139,0,0,0.8),
+        0 0 30px rgba(139,0,0,0.4);
+      margin-bottom: 0.5rem;
+      animation: flicker 8s infinite;
+    }
+
+    @keyframes flicker {
+      0%, 95%, 100% { opacity: 1; }
+      96% { opacity: 0.85; }
+      97% { opacity: 1; }
+      98% { opacity: 0.7; }
+      99% { opacity: 1; }
+    }
+
+    .page-subtitle {
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      margin-bottom: 3rem;
+    }
+
+    .terminal-box {
+      border: 1px solid var(--blood);
+      background: rgba(10,0,0,0.6);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      position: relative;
+      box-shadow: 0 0 15px rgba(139,0,0,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+
+    .terminal-box::before {
+      content: attr(data-label);
+      position: absolute;
+      top: -0.6em; left: 1rem;
+      font-size: 0.7rem;
+      color: var(--blood);
+      background: var(--darker);
+      padding: 0 0.5rem;
+      letter-spacing: 0.2em;
+    }
+
+    .instructions {
+      font-size: 0.85rem;
+      line-height: 1.9;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .the-phrase {
+      font-family: 'AfterlifeBB', serif;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      color: var(--text);
+      text-align: center;
+      padding: 1.5rem;
+      border: 1px solid rgba(139,0,0,0.3);
+      background: rgba(0,0,0,0.4);
+      margin: 1.5rem 0 0.5rem;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 8px rgba(139,0,0,0.4);
+    }
+
+    .phrase-note {
+      font-size: 0.65rem;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+      text-align: center;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 1px dashed rgba(139,0,0,0.5);
+      background: rgba(10,0,0,0.4);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--bright-red);
+      background: rgba(30,0,0,0.6);
+      box-shadow: 0 0 20px rgba(139,0,0,0.3);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      font-size: 1.8rem;
+      color: var(--blood);
+      margin-bottom: 0.75rem;
+    }
+
+    .upload-text {
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+    }
+
+    .upload-preview {
+      max-width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      display: none;
+      margin: 0 auto;
+      border: 1px solid rgba(139,0,0,0.3);
+    }
+
+    /* API key */
+    .api-toggle {
+      font-size: 0.65rem;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      text-align: right;
+      margin-bottom: 0.5rem;
+      user-select: none;
+    }
+    .api-toggle:hover { color: var(--blood); }
+
+    .api-input-wrap { display: none; margin-bottom: 1rem; }
+    .api-input-wrap.visible { display: block; }
+
+    .api-input {
+      width: 100%;
+      background: rgba(0,0,0,0.8);
+      border: 1px solid rgba(139,0,0,0.3);
+      color: var(--dim);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.6rem 1rem;
+      letter-spacing: 0.05em;
+      outline: none;
+    }
+    .api-input:focus { border-color: var(--blood); color: var(--text); }
+    .api-input::placeholder { color: #2a1a0a; }
+
+    /* Submit */
+    .submit-wrap { text-align: center; }
+
+    .submit-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--blood);
+      border: 1px solid var(--bright-red);
+      padding: 0.9rem 3rem;
+      cursor: pointer;
+      transition: all 0.1s;
+      box-shadow: 0 0 20px rgba(139,0,0,0.4);
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+    .submit-btn:hover:not(:disabled) {
+      background: var(--red);
+      box-shadow: 0 0 35px rgba(255,34,0,0.6);
+    }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Loading */
+    .loading-msg {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      margin-top: 1.5rem;
+      display: none;
+      min-height: 1.5em;
+    }
+    .loading-msg.visible { display: block; }
+
+    .cursor {
+      display: inline-block;
+      width: 0.6em; height: 1.1em;
+      background: var(--green);
+      vertical-align: text-bottom;
+      animation: blink 1.1s step-end infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Results */
+    .results-box { display: none; }
+    .results-box.visible { display: block; }
+
+    .reading-text {
+      font-size: 0.9rem;
+      line-height: 2;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    .tempus-sig {
+      text-align: right;
+      font-family: 'AfterlifeBB', serif;
+      font-size: 1.3rem;
+      color: var(--blood);
+      margin-top: 1.5rem;
+      text-shadow: 0 0 10px rgba(139,0,0,0.5);
+      letter-spacing: 0.05em;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.65rem;
+      color: var(--dim);
+      letter-spacing: 0.25em;
+    }
+    .footer a { color: var(--blood); text-decoration: none; }
+    .footer a:hover { color: var(--bright-red); }
+
+  </style>
+</head>
+<body>
+
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="container">
+
+    <a href="/" class="back-link">← return to the dark</a>
+
+    <div class="page-title">Tempus Frangit</div>
+    <div class="page-subtitle">[ handwriting analysis protocol ]</div>
+
+    <div class="terminal-box" data-label="[ INSTRUCTIONS ]">
+      <div class="instructions">
+        Write the following phrase by hand.<br/>
+        Photograph it. Upload it here.<br/><br/>
+        The oracle will read what your letters reveal.<br/>
+        You may be surprised by what your hand already knows.
+      </div>
+      <div class="the-phrase">I was not made for ordinary light</div>
+      <div class="phrase-note">write this. in your own hand. on anything.</div>
+    </div>
+
+    <div class="terminal-box" data-label="[ UPLOAD SAMPLE ]">
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="image/*" capture="environment" />
+        <img id="uploadPreview" class="upload-preview" alt="your handwriting" />
+        <div id="uploadPrompt">
+          <div class="upload-icon">⬡</div>
+          <div class="upload-text">PHOTOGRAPH YOUR HANDWRITING — DROP HERE OR CLICK</div>
+        </div>
+      </div>
+
+      <div class="api-toggle" onclick="toggleApiKey()">[ ORACLE KEY ▾ ]</div>
+      <div class="api-input-wrap" id="apiInputWrap">
+        <input
+          type="password"
+          class="api-input"
+          id="apiKeyInput"
+          placeholder="sk-ant-..."
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="submit-wrap">
+        <button class="submit-btn" id="submitBtn" onclick="analyze()" disabled>
+          ⬡ &nbsp; CONSULT THE ORACLE &nbsp; ⬡
+        </button>
+      </div>
+
+      <div class="loading-msg" id="loadingMsg">
+        &gt; <span id="loadingText">READING YOUR HAND</span><span class="cursor"></span>
+      </div>
+
+    </div>
+
+    <div class="terminal-box results-box" id="resultsBox" data-label="[ YOUR READING ]">
+      <div class="reading-text" id="readingText"></div>
+      <div class="tempus-sig">Tempus Frangit</div>
+    </div>
+
+    <div class="footer">
+      <a href="/">← SHABBY SHRIEK</a>
+    </div>
+
+  </div>
+
+  <script>
+    let imageBase64 = null;
+    let imageType = null;
+
+    const fileInput    = document.getElementById('fileInput');
+    const uploadZone   = document.getElementById('uploadZone');
+    const uploadPreview= document.getElementById('uploadPreview');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const submitBtn    = document.getElementById('submitBtn');
+    const loadingMsg   = document.getElementById('loadingMsg');
+    const loadingText  = document.getElementById('loadingText');
+    const resultsBox   = document.getElementById('resultsBox');
+    const readingText  = document.getElementById('readingText');
+
+    // Load key from session if stored
+    window.addEventListener('load', () => {
+      const saved = sessionStorage.getItem('ss_oracle_key');
+      if (saved) document.getElementById('apiKeyInput').value = saved;
+    });
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) handleFile(file);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      imageType = file.type;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imageBase64 = e.target.result.split(',')[1];
+        uploadPreview.src = e.target.result;
+        uploadPreview.style.display = 'block';
+        uploadPrompt.style.display  = 'none';
+        submitBtn.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function toggleApiKey() {
+      document.getElementById('apiInputWrap').classList.toggle('visible');
+    }
+
+    const loadingMessages = [
+      'READING YOUR HAND',
+      'CONSULTING THE DARK',
+      'TRACING YOUR LETTERS',
+      'THE ORACLE STIRS',
+      'LISTENING TO YOUR INK',
+    ];
+    let msgIdx = 0;
+
+    async function analyze() {
+      const keyInput = document.getElementById('apiKeyInput').value.trim();
+      const apiKey   = keyInput || sessionStorage.getItem('ss_oracle_key');
+
+      if (!apiKey) {
+        document.getElementById('apiInputWrap').classList.add('visible');
+        document.getElementById('apiKeyInput').focus();
+        return;
+      }
+      if (keyInput) sessionStorage.setItem('ss_oracle_key', keyInput);
+
+      submitBtn.disabled = true;
+      loadingMsg.classList.add('visible');
+      resultsBox.classList.remove('visible');
+
+      const interval = setInterval(() => {
+        msgIdx = (msgIdx + 1) % loadingMessages.length;
+        loadingText.textContent = loadingMessages[msgIdx];
+      }, 1800);
+
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 1000,
+            messages: [{
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  source: { type: 'base64', media_type: imageType, data: imageBase64 }
+                },
+                {
+                  type: 'text',
+                  text: `You are the oracle of Shabby Shriek — a maker of handcrafted goods and dark curiosities, a purveyor of beautiful things for difficult people. You read handwriting with the precision of a graphologist and the voice of something older than most cities.
+
+The person was asked to write by hand: "I was not made for ordinary light."
+
+Analyze the handwriting carefully. Look for:
+- Slant (left: introspective; right: outward-reaching; upright: independent)
+- Pressure (heavy: intensity and passion; light: sensitivity and intuition)
+- Size (large: desires to be seen; small: self-contained, concentrated)
+- Baseline (level: stable; rising: restless or optimistic; falling: gravity-weighted or realistic)
+- Letter connections (connected: logical; disconnected: intuitive leaps)
+- Ascenders and descenders (tall h, l, d, b, t, k, f and deep g, y, p, j — what do they reach for, what do they drag?)
+- How they cross their t's, dot their i's
+- Capital letters — do they announce themselves or shrink?
+- Word spacing — do the words breathe or press together?
+
+Deliver a personality reading as flowing prose. Be specific — reference actual things you observe in the letters. Do not be generic or vague. Speak to what this person carries inside them. Be poetic but precise. Slightly unsettling in its accuracy. Speak as though you have been doing this for centuries and find this particular hand genuinely interesting.
+
+3 to 5 paragraphs, under 250 words. Do not use bullet points. Do not explain that you are performing graphology. Simply read. Do not end with or include the phrase "Tempus Frangit" — it will be appended.`
+                }
+              ]
+            }]
+          })
+        });
+
+        clearInterval(interval);
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error.message);
+
+        readingText.textContent = data.content[0].text;
+        resultsBox.classList.add('visible');
+        setTimeout(() => resultsBox.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+      } catch (err) {
+        clearInterval(interval);
+        readingText.textContent = '> ERROR: The oracle encountered an obstruction.\n> ' + err.message;
+        resultsBox.classList.add('visible');
+      } finally {
+        submitBtn.disabled = false;
+        loadingMsg.classList.remove('visible');
+      }
+    }
+  </script>
+
+</body>
+</html>
