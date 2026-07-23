@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shabby Shriek — See What Stirs</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400&display=swap');
+    @font-face {
+      font-family: 'AfterlifeBB';
+      src: url('fonts/AfterlifeBB.woff') format('woff'),
+           url('fonts/AfterlifeBB.ttf') format('truetype');
+    }
+    :root {
+      --blood: #8b0000;
+      --darker: #050505;
+      --text: #c9b99a;
+      --dim: #5a4a3a;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--darker);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px);
+      pointer-events:none; z-index:50;
+    }
+    body::after {
+      content:'';
+      position:fixed; inset:0;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.92) 100%);
+      pointer-events:none; z-index:49;
+    }
+    .corner { position:fixed; width:40px; height:40px; z-index:60; opacity:0.4; }
+    .corner.tl { top:1rem; left:1rem; border-top:1px solid var(--blood); border-left:1px solid var(--blood); }
+    .corner.tr { top:1rem; right:1rem; border-top:1px solid var(--blood); border-right:1px solid var(--blood); }
+    .corner.bl { bottom:1rem; left:1rem; border-bottom:1px solid var(--blood); border-left:1px solid var(--blood); }
+    .corner.br { bottom:1rem; right:1rem; border-bottom:1px solid var(--blood); border-right:1px solid var(--blood); }
+
+    .scene {
+      position:relative; z-index:20;
+      display:flex; flex-direction:column; align-items:center;
+    }
+    .eyebrow {
+      font-size:0.58rem; letter-spacing:0.55em; color:var(--dim);
+      text-transform:uppercase; margin-bottom:1.2rem;
+    }
+
+    /* ── THE BALL ── */
+    .ball {
+      width:340px; height:340px;
+      border-radius:50%;
+      position:relative; overflow:hidden;
+      cursor:grab;
+      transition: box-shadow 0.8s ease;
+      box-shadow: 0 0 60px rgba(139,0,0,0.25), 0 0 120px rgba(80,0,0,0.1), inset 0 0 30px rgba(0,0,0,0.5);
+    }
+    .ball:active { cursor:grabbing; }
+    #ball-canvas { width:100%; height:100%; display:block; }
+
+    /* Glass overlay — primary glare + secondary highlight + rim darkening */
+    .ball::after {
+      content:'';
+      position:absolute; inset:0; border-radius:50%;
+      background:
+        radial-gradient(circle at 34% 27%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.22) 16%, rgba(255,255,255,0.04) 38%, transparent 55%),
+        radial-gradient(circle at 68% 72%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 22%, transparent 42%),
+        radial-gradient(circle at 50% 50%, transparent 52%, rgba(5,0,8,0.55) 80%, rgba(0,0,0,0.9) 100%);
+      pointer-events:none; z-index:10;
+    }
+    /* Ball rim ring */
+    .ball::before {
+      content:'';
+      position:absolute; inset:0; border-radius:50%;
+      border:2px solid rgba(255,255,255,0.07);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.9), inset 0 0 50px rgba(0,0,0,0.25);
+      z-index:11; pointer-events:none;
+    }
+
+    /* ── STAND ── */
+    .stand-wrap { margin-top:-10px; z-index:5; }
+
+    /* ── NAV ── */
+    .ball-nav {
+      display:flex; align-items:center; gap:1.4rem;
+      margin-top:1rem;
+    }
+    .nav-btn {
+      background:none; border:none; cursor:pointer;
+      color:var(--dim); font-size:1.3rem;
+      font-family:'Share Tech Mono',monospace;
+      padding:0.5rem; transition:color 0.2s, transform 0.1s;
+    }
+    .nav-btn:hover { color:var(--blood); transform:scale(1.25); }
+    .nav-btn:active { transform:scale(0.9); }
+
+    .page-info { text-align:center; min-width:190px; }
+    .page-link {
+      font-family:'AfterlifeBB',serif;
+      font-size:1.75rem;
+      color:var(--text);
+      text-decoration:none;
+      display:block;
+      transition:color 0.5s, text-shadow 0.5s;
+      text-shadow: 0 0 25px rgba(200,180,150,0.3);
+    }
+    .page-link:hover { color:#fff; text-shadow:0 0 30px rgba(255,255,255,0.4); }
+    .page-hint { font-size:0.58rem; color:var(--dim); letter-spacing:0.3em; margin-top:0.25rem; }
+
+    .dots { display:flex; gap:0.45rem; justify-content:center; margin-top:0.7rem; }
+    .dot { width:6px; height:6px; border-radius:50%; background:var(--dim); transition:background 0.4s, transform 0.4s; }
+    .dot.active { background:var(--blood); transform:scale(1.5); }
+
+    .back-link {
+      position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
+      font-size:0.62rem; color:var(--dim); letter-spacing:0.25em;
+      text-decoration:none; z-index:60;
+    }
+    .back-link:hover { color:var(--blood); }
+
+    @media(max-width:480px){
+      .ball { width:270px; height:270px; }
+    }
+  </style>
+</head>
+<body>
+<div class="corner tl"></div>
+<div class="corner tr"></div>
+<div class="corner bl"></div>
+<div class="corner br"></div>
+
+<div class="scene">
+  <div class="eyebrow">What stirs within</div>
+
+  <div class="ball" id="ball"
+       ontouchstart="touchStart(event)"
+       ontouchend="touchEnd(event)">
+    <canvas id="ball-canvas" width="340" height="340"></canvas>
+  </div>
+
+  <!-- Ornate gothic stand -->
+  <div class="stand-wrap">
+    <svg width="280" height="138" viewBox="0 0 280 138" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sg" x1="140" y1="0" x2="140" y2="138" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#2e2420"/>
+          <stop offset="55%" stop-color="#1c1410"/>
+          <stop offset="100%" stop-color="#0d0a07"/>
+        </linearGradient>
+        <linearGradient id="sh" x1="0" y1="0" x2="280" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+          <stop offset="40%" stop-color="rgba(255,255,255,0.07)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Cradle rim at top (where ball sits) -->
+      <ellipse cx="140" cy="16" rx="78" ry="16" fill="url(#sg)" stroke="#3d3028" stroke-width="1.2"/>
+      <ellipse cx="140" cy="14" rx="60" ry="10" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.8"/>
+      <ellipse cx="140" cy="16" rx="42" ry="6" fill="url(#sh)"/>
+
+      <!-- Left leg -->
+      <path d="M 62,28 C 54,52 36,75 24,112 Q 20,125 30,128 L 62,128 Q 66,98 78,65 Z"
+            fill="url(#sg)" stroke="#3d3028" stroke-width="0.9"/>
+      <!-- Left scrollwork -->
+      <path d="M 46,58 C 37,52 31,59 37,67 C 43,75 55,70 49,62" fill="none" stroke="#5a4535" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M 40,80 C 31,75 26,82 31,89 C 36,96 48,92 43,85" fill="none" stroke="#5a4535" stroke-width="1" stroke-linecap="round"/>
+      <circle cx="46" cy="62" r="2.5" fill="none" stroke="#5a4535" stroke-width="0.8"/>
+
+      <!-- Right leg -->
+      <path d="M 218,28 C 226,52 244,75 256,112 Q 260,125 250,128 L 218,128 Q 214,98 202,65 Z"
+            fill="url(#sg)" stroke="#3d3028" stroke-width="0.9"/>
+      <!-- Right scrollwork -->
+      <path d="M 234,58 C 243,52 249,59 243,67 C 237,75 225,70 231,62" fill="none" stroke="#5a4535" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M 240,80 C 249,75 254,82 249,89 C 244,96 232,92 237,85" fill="none" stroke="#5a4535" stroke-width="1" stroke-linecap="round"/>
+      <circle cx="234" cy="62" r="2.5" fill="none" stroke="#5a4535" stroke-width="0.8"/>
+
+      <!-- Centre column -->
+      <path d="M 122,28 L 114,128 L 166,128 L 158,28 Z" fill="url(#sg)" stroke="#3d3028" stroke-width="0.9"/>
+      <!-- Centre scrollwork -->
+      <path d="M 130,58 C 124,52 124,62 130,64 C 136,66 148,62 150,54 C 152,46 146,40 140,42 C 134,44 128,52 132,60" fill="none" stroke="#5a4535" stroke-width="1.1" stroke-linecap="round"/>
+
+      <!-- Crossbar -->
+      <path d="M 55,83 Q 140,72 225,83" fill="none" stroke="#3d3028" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M 55,83 Q 140,72 225,83" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+      <!-- Crossbar centre ornament -->
+      <circle cx="140" cy="74" r="6" fill="none" stroke="#5a4535" stroke-width="1.1"/>
+      <path d="M 134,74 Q 140,68 146,74 Q 140,80 134,74 Z" fill="none" stroke="#5a4535" stroke-width="0.8"/>
+
+      <!-- Base plate stepped -->
+      <rect x="18" y="126" width="244" height="8" rx="3" fill="url(#sg)" stroke="#3d3028" stroke-width="0.8"/>
+      <rect x="30" y="132" width="220" height="5" rx="2" fill="#0d0a07" stroke="#2e2420" stroke-width="0.5"/>
+      <!-- Base decorative line -->
+      <line x1="40" y1="129" x2="240" y2="129" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    </svg>
+  </div>
+
+  <div class="ball-nav">
+    <button class="nav-btn" onclick="navigate(-1)" aria-label="previous">◁</button>
+    <div class="page-info">
+      <a id="page-link" class="page-link" href="#"></a>
+      <div class="page-hint">[ enter ]</div>
+    </div>
+    <button class="nav-btn" onclick="navigate(1)" aria-label="next">▷</button>
+  </div>
+  <div class="dots" id="dots"></div>
+</div>
+
+<a href="/" class="back-link">← return to the dark</a>
+
+<script>
+// ══════════════════════════════════════════════════
+// PAGE DEFINITIONS
+// ══════════════════════════════════════════════════
+const PAGES = [
+  {
+    name: 'The Shop',
+    href: 'https://etsy.com/shop/CraftedInTheVoid',
+    external: true,
+    colors: ['#8b0000','#cc3300','#5a5a5a','#333','#ff6600','#3d0000','#aa2200'],
+    glow: 'rgba(139,0,0,',
+    draw: drawShop
+  },
+  {
+    name: 'The Chronicle',
+    href: 'blog.html',
+    external: false,
+    colors: ['#1a0a4a','#6b21a8','#2d1b69','#9333ea','#c4b5fd','#0f0628','#4c1d95'],
+    glow: 'rgba(107,33,168,',
+    draw: drawBlog
+  },
+  {
+    name: 'Tempus Frangit',
+    href: 'read-me/',
+    external: false,
+    colors: ['#5b21b6','#b8860b','#7c3aed','#d97706','#d4af37','#2e1065','#92400e'],
+    glow: 'rgba(91,33,182,',
+    draw: drawOracle
+  },
+  {
+    name: '@shabbyshriek',
+    href: 'https://instagram.com/shabbyshriek',
+    external: true,
+    colors: ['#ea580c','#db2777','#7c3aed','#f97316','#ec4899','#701a75','#c2410c'],
+    glow: 'rgba(234,88,12,',
+    draw: drawInstagram
+  }
+];
+
+// ══════════════════════════════════════════════════
+// CANVAS & STATE
+// ══════════════════════════════════════════════════
+const canvas = document.getElementById('ball-canvas');
+const ctx = canvas.getContext('2d');
+const SIZE = 340, CX = 170, CY = 170;
+
+let current = 0, t = 0;
+let visionAlpha = 1;
+let transitioning = false;
+let transOut = false, transIn = false;
+let nextPage = 0;
+const TSPEED = 0.038;
+
+// ══════════════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════════════
+class Particle {
+  constructor(){ this.init(true); }
+  init(rnd=false){
+    const pg = PAGES[current];
+    this.color = pg.colors[Math.floor(Math.random()*pg.colors.length)];
+    this.angle = Math.random()*Math.PI*2;
+    this.targetR = 18 + Math.random()*130;
+    this.r = rnd ? this.targetR*Math.random() : 5;
+    this.speed = (0.003+Math.random()*0.013)*(Math.random()>.5?1:-1);
+    this.sz = 0.7+Math.random()*2.8;
+    this.alpha = 0.18+Math.random()*0.72;
+    this.life = rnd ? Math.random()*220 : 0;
+    this.maxLife = 160+Math.random()*300;
+    this.drift = (Math.random()-.5)*0.28;
+  }
+  update(){
+    this.angle += this.speed;
+    this.r += (this.targetR-this.r)*0.025 + this.drift*0.08;
+    this.life++;
+    if(this.life>this.maxLife) this.init(false);
+  }
+  draw(scale=1){
+    const lr = this.life/this.maxLife;
+    const fade = lr<0.1?lr*10:lr>0.85?(1-lr)*6.7:1;
+    const x = CX+Math.cos(this.angle)*this.r;
+    const y = CY+Math.sin(this.angle)*this.r;
+    ctx.save();
+    ctx.globalAlpha = fade*this.alpha*scale;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(x,y,this.sz,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+  scatter(){ this.targetR = 195+Math.random()*55; this.speed*=3.5; }
+  recollect(){
+    const pg = PAGES[current];
+    this.color = pg.colors[Math.floor(Math.random()*pg.colors.length)];
+    this.targetR = 18+Math.random()*130;
+    this.r = 195+Math.random()*40;
+    this.speed = (0.003+Math.random()*0.013)*(Math.random()>.5?1:-1);
+    this.life = 0; this.maxLife = 160+Math.random()*300;
+  }
+}
+
+const particles = Array.from({length:95},()=>new Particle());
+
+// ══════════════════════════════════════════════════
+// VISION: THE SHOP — Tinker with wagon
+// ══════════════════════════════════════════════════
+function drawShop(t, alpha){
+  // Smoky ember background
+  const bg = ctx.createRadialGradient(CX,CY+50,8,CX,CY+50,145);
+  bg.addColorStop(0,`rgba(180,55,0,${.38*alpha})`);
+  bg.addColorStop(.5,`rgba(70,15,0,${.2*alpha})`);
+  bg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,SIZE,SIZE);
+
+  ctx.save(); ctx.globalAlpha=alpha;
+
+  // Lantern glow
+  const lx=CX+58, ly=CY-8;
+  const lg = ctx.createRadialGradient(lx,ly,2,lx,ly,55);
+  lg.addColorStop(0,'rgba(255,195,45,0.85)');
+  lg.addColorStop(.3,'rgba(255,110,0,0.4)');
+  lg.addColorStop(1,'rgba(255,50,0,0)');
+  ctx.fillStyle=lg; ctx.fillRect(0,0,SIZE,SIZE);
+
+  // Ground mist
+  const gm = ctx.createLinearGradient(0,CY+55,0,SIZE);
+  gm.addColorStop(0,'rgba(40,10,0,0)');
+  gm.addColorStop(.5,'rgba(30,8,0,0.5)');
+  gm.addColorStop(1,'rgba(10,3,0,0.8)');
+  ctx.fillStyle=gm; ctx.fillRect(0,CY+55,SIZE,SIZE);
+
+  // Wagon body
+  ctx.fillStyle='#2a1a08'; ctx.strokeStyle='#5c3c1a'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(CX-15,CY+2,78,42,3); ctx.fill(); ctx.stroke();
+
+  // Wagon canvas roof
+  ctx.fillStyle='#1c1005'; ctx.strokeStyle='#4a3015'; ctx.lineWidth=1.2;
+  ctx.beginPath();
+  ctx.moveTo(CX-15,CY+2); ctx.bezierCurveTo(CX-5,CY-22,CX+53,CY-22,CX+63,CY+2);
+  ctx.fill(); ctx.stroke();
+
+  // Colourful items on wagon side
+  [['#8b1a1a',CX-8,CY+18,6,10],['#1a5a8b',CX+8,CY+15,5,12],
+   ['#4a8b1a',CX+24,CY+17,7,9],['#8b6a1a',CX+40,CY+16,4,12]].forEach(([col,x,y,w,h])=>{
+    ctx.fillStyle=col; ctx.fillRect(x,y,w,h);
+  });
+
+  // Wheels
+  [CX-4, CX+52].forEach(wx=>{
+    ctx.strokeStyle='#5c3c1a'; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.arc(wx,CY+44,15,0,Math.PI*2); ctx.stroke();
+    for(let s=0;s<6;s++){
+      const sa=(s/6)*Math.PI*2+t*.08;
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(wx,CY+44);
+      ctx.lineTo(wx+Math.cos(sa)*13,CY+44+Math.sin(sa)*13);
+      ctx.stroke();
+    }
+  });
+
+  // Hanging items
+  [[CX-8,6,'#b87020'],[CX+12,8,'#3a2010'],[CX+32,5,'#aa2020']].forEach(([hx,ho,col],i)=>{
+    const bob = Math.sin(t*.7+i)*2.5;
+    ctx.strokeStyle='#4a3010'; ctx.lineWidth=.8;
+    ctx.beginPath(); ctx.moveTo(hx,CY-12); ctx.lineTo(hx,CY-ho+bob); ctx.stroke();
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(hx,CY-ho+bob+5,5,0,Math.PI*2); ctx.fill();
+  });
+
+  // Lantern (physical)
+  ctx.fillStyle='#b87c22'; ctx.strokeStyle='#d4a030'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(lx-6,ly-13,12,18,2); ctx.fill(); ctx.stroke();
+  const flicker = ctx.createRadialGradient(lx,ly,0,lx,ly,10);
+  flicker.addColorStop(0,`rgba(255,215,70,${.9+Math.sin(t*7)*.08})`);
+  flicker.addColorStop(1,'rgba(255,120,0,0)');
+  ctx.fillStyle=flicker; ctx.fillRect(lx-14,ly-18,28,28);
+
+  // Tinker silhouette
+  ctx.fillStyle='#160e05';
+  ctx.beginPath(); ctx.ellipse(CX-48,CY+22,13,19,-.28,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(CX-43,CY-2,10,0,Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(CX-56,CY-8); ctx.lineTo(CX-30,CY-8);
+  ctx.lineTo(CX-35,CY-27); ctx.lineTo(CX-51,CY-27); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#160e05'; ctx.lineWidth=4; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(CX-40,CY+6); ctx.lineTo(CX-20,CY+3); ctx.stroke();
+
+  // Distant path/road
+  ctx.strokeStyle='rgba(80,40,10,0.3)'; ctx.lineWidth=15;
+  ctx.beginPath(); ctx.moveTo(0,SIZE); ctx.lineTo(SIZE,CY+58); ctx.stroke();
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════
+// VISION: THE CHRONICLE — Illuminated manuscript
+// ══════════════════════════════════════════════════
+function drawBlog(t, alpha){
+  const bg = ctx.createRadialGradient(CX,CY-20,5,CX,CY,185);
+  bg.addColorStop(0,`rgba(28,12,70,${.5*alpha})`);
+  bg.addColorStop(.55,`rgba(10,5,28,${.4*alpha})`);
+  bg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,SIZE,SIZE);
+
+  ctx.save(); ctx.globalAlpha=alpha;
+
+  // Unroll animation: scroll gradually opens
+  const unroll = .5 + Math.sin(t*.25)*.08;
+  const sw=155, sh=Math.floor(128*unroll);
+  const sx=CX-sw/2, sy=CY-sh/2-8;
+
+  // Parchment body
+  const parch = ctx.createLinearGradient(sx,sy,sx+sw,sy+sh);
+  parch.addColorStop(0,'rgba(38,22,68,0.93)');
+  parch.addColorStop(.5,'rgba(28,15,52,0.96)');
+  parch.addColorStop(1,'rgba(18,10,38,0.93)');
+
+  // Top rolled edge
+  ctx.fillStyle='rgba(48,28,85,0.92)';
+  ctx.strokeStyle='rgba(147,51,234,0.5)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.ellipse(CX,sy,sw/2,9,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  // Body
+  ctx.fillStyle=parch;
+  ctx.beginPath(); ctx.roundRect(sx,sy,sw,sh,2); ctx.fill(); ctx.stroke();
+
+  // Bottom rolled edge
+  if(sh>20){
+    ctx.fillStyle='rgba(48,28,85,0.92)';
+    ctx.beginPath(); ctx.ellipse(CX,sy+sh,sw/2,9,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  }
+
+  // Clip to parchment for interior content
+  ctx.save();
+  ctx.beginPath(); ctx.roundRect(sx,sy,sw,sh,2); ctx.clip();
+
+  // Decorative border
+  ctx.strokeStyle='rgba(167,139,250,0.35)'; ctx.lineWidth=.8;
+  ctx.strokeRect(sx+8,sy+16,sw-16,sh-32);
+  ctx.strokeStyle='rgba(167,139,250,0.15)'; ctx.lineWidth=.4;
+  ctx.strokeRect(sx+12,sy+20,sw-24,sh-40);
+
+  // Corner ornaments
+  [[sx+11,sy+19],[sx+sw-11,sy+19],[sx+11,sy+sh-19],[sx+sw-11,sy+sh-19]].forEach(([ox,oy])=>{
+    ctx.strokeStyle='rgba(196,165,255,0.45)'; ctx.lineWidth=.9;
+    ctx.beginPath(); ctx.arc(ox,oy,5,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox-8,oy); ctx.lineTo(ox+8,oy); ctx.moveTo(ox,oy-8); ctx.lineTo(ox,oy+8); ctx.stroke();
+  });
+
+  // Illuminated capital S
+  ctx.font='italic bold 56px "Cinzel",Georgia,serif';
+  ctx.fillStyle='rgba(212,175,55,0.85)';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('S',sx+14,sy+22);
+  ctx.fillStyle='rgba(196,165,255,0.5)';
+  ctx.font='italic bold 56px "Cinzel",Georgia,serif';
+  ctx.fillText('S',sx+12,sy+20);
+
+  // Text lines
+  const lineColors=['rgba(196,165,255,0.55)','rgba(167,139,250,0.4)','rgba(147,112,219,0.35)'];
+  if(sh>40){
+    [0,1,2,3,4,5,6].forEach(i=>{
+      if(sy+36+i*13 < sy+sh-20){
+        ctx.fillStyle=lineColors[i%3];
+        const lx2=i===0?sx+68:sx+14;
+        const lw=i===0?sw-82:(i===6?55:sw-28);
+        ctx.fillRect(lx2,sy+36+i*13,lw,2.2);
+      }
+    });
+  }
+
+  // Small illuminated initials in margin
+  if(sh>80){
+    ctx.font='10px "Cinzel",serif';
+    ctx.fillStyle='rgba(212,175,55,0.6)';
+    ctx.textAlign='center';
+    ['✦','☽','✦'].forEach((sym,i)=>{
+      ctx.fillText(sym,sx+20,sy+60+i*18);
+    });
+  }
+
+  ctx.restore(); // unclip
+
+  // Orbiting stars
+  for(let s=0;s<10;s++){
+    const sa=(s/10)*Math.PI*2+t*.18;
+    const sr=105+Math.sin(t+s)*14;
+    ctx.fillStyle=`rgba(196,165,255,${.28+Math.sin(t*2+s)*.15})`;
+    ctx.beginPath(); ctx.arc(CX+Math.cos(sa)*sr,CY+Math.sin(sa)*sr,1.4,0,Math.PI*2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════
+// VISION: TEMPUS FRANGIT — Disembodied pen
+// ══════════════════════════════════════════════════
+function drawOracle(t, alpha){
+  const bg = ctx.createRadialGradient(CX,CY,5,CX,CY,180);
+  bg.addColorStop(0,`rgba(55,18,95,${.5*alpha})`);
+  bg.addColorStop(.5,`rgba(25,5,55,${.4*alpha})`);
+  bg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,SIZE,SIZE);
+
+  ctx.save(); ctx.globalAlpha=alpha;
+
+  // Gold ink glow below pen
+  const nibX=CX+22+Math.sin(t*.4)*6;
+  const nibY=CY+10+Math.cos(t*.3)*5;
+  const ng = ctx.createRadialGradient(nibX,nibY+2,0,nibX,nibY+2,30);
+  ng.addColorStop(0,'rgba(212,175,55,0.6)');
+  ng.addColorStop(1,'rgba(212,175,55,0)');
+  ctx.fillStyle=ng; ctx.fillRect(nibX-35,nibY-10,70,45);
+
+  // Floating pen (rotates gently)
+  ctx.save();
+  ctx.translate(CX+10+Math.sin(t*.4)*6, CY-18+Math.cos(t*.3)*5);
+  ctx.rotate(-.68+Math.sin(t*.45)*.06);
+
+  const len=115;
+  // Barrel
+  ctx.strokeStyle='rgba(212,175,55,0.92)'; ctx.lineWidth=2.2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,len*.45); ctx.lineTo(0,-len*.45); ctx.stroke();
+
+  // Left vanes
+  for(let f=0;f<14;f++){
+    const fy=-len*.44+f*7.5;
+    const fw=14+f*1.3;
+    ctx.strokeStyle=`rgba(225,210,255,${.65-f*.02})`;
+    ctx.lineWidth=.9;
+    ctx.beginPath();
+    ctx.moveTo(0,fy);
+    ctx.bezierCurveTo(-fw*.35,fy+3,-fw*.72,fy+5.5,-fw,fy+2.5);
+    ctx.stroke();
+  }
+  // Right vanes
+  for(let f=0;f<14;f++){
+    const fy=-len*.44+f*7.5;
+    const fw=11+f;
+    ctx.strokeStyle=`rgba(225,210,255,${.5-f*.02})`;
+    ctx.lineWidth=.9;
+    ctx.beginPath();
+    ctx.moveTo(0,fy);
+    ctx.bezierCurveTo(fw*.3,fy+2.5,fw*.65,fy+4.5,fw,fy+1.5);
+    ctx.stroke();
+  }
+
+  // Nib
+  ctx.fillStyle='rgba(212,175,55,0.95)';
+  ctx.beginPath(); ctx.moveTo(0,len*.45); ctx.lineTo(-4,len*.35); ctx.lineTo(4,len*.35); ctx.closePath(); ctx.fill();
+
+  // Ink drop
+  const flick=.9+Math.sin(t*8)*.1;
+  ctx.fillStyle=`rgba(212,175,55,${flick})`;
+  ctx.beginPath(); ctx.arc(0,len*.48,2.5,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+
+  // Golden cursive strokes in midair
+  const wt=t*.55;
+  // Line 1
+  ctx.strokeStyle='rgba(212,175,55,0.65)'; ctx.lineWidth=1.6;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  for(let i=0;i<32;i++){
+    const ww=(i/31)*Math.PI*4.2+wt;
+    const wx=CX-88+(i/31)*95+Math.cos(ww)*11;
+    const wy=CY+55+Math.sin(ww*1.8)*9;
+    i===0?ctx.moveTo(wx,wy):ctx.lineTo(wx,wy);
+  }
+  ctx.stroke();
+
+  // Line 2
+  ctx.strokeStyle='rgba(180,140,255,0.45)'; ctx.lineWidth=1.1;
+  ctx.beginPath();
+  for(let i=0;i<24;i++){
+    const ww=(i/23)*Math.PI*3+wt+1.2;
+    const wx=CX-75+(i/23)*80+Math.cos(ww)*7;
+    const wy=CY+72+Math.sin(ww*2.2)*6;
+    i===0?ctx.moveTo(wx,wy):ctx.lineTo(wx,wy);
+  }
+  ctx.stroke();
+
+  // Floating symbols
+  const syms=['☽','✦','⊕','∞','◈','✧'];
+  syms.forEach((s,i)=>{
+    const sa=(i/syms.length)*Math.PI*2+t*.14;
+    const sr=90+Math.sin(t*.6+i)*13;
+    ctx.font='13px serif';
+    ctx.fillStyle=`rgba(212,175,55,${.38+Math.sin(t+i)*.18})`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(s,CX+Math.cos(sa)*sr,CY+Math.sin(sa)*sr);
+  });
+
+  // Purple mist wisp
+  [[-50,30],[60,-20],[-20,-55]].forEach(([ox,oy],i)=>{
+    const mg = ctx.createRadialGradient(CX+ox,CY+oy,0,CX+ox,CY+oy,35);
+    mg.addColorStop(0,`rgba(120,50,200,${(.18+Math.sin(t*.6+i)*.06)*alpha})`);
+    mg.addColorStop(1,'rgba(120,50,200,0)');
+    ctx.fillStyle=mg; ctx.fillRect(CX+ox-40,CY+oy-40,80,80);
+  });
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════
+// VISION: INSTAGRAM — The Eye (not-quite-Sauron)
+// ══════════════════════════════════════════════════
+function drawInstagram(t, alpha){
+  const bg = ctx.createRadialGradient(CX,CY,8,CX,CY,180);
+  bg.addColorStop(0,`rgba(200,75,0,${.42*alpha})`);
+  bg.addColorStop(.4,`rgba(120,20,55,${.32*alpha})`);
+  bg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,SIZE,SIZE);
+
+  ctx.save(); ctx.globalAlpha=alpha;
+
+  const EW=132, EH=60;
+
+  // Clip to eye shape
+  ctx.save();
+  ctx.beginPath();
+  // Custom almond eye path
+  ctx.moveTo(CX-EW,CY);
+  ctx.bezierCurveTo(CX-EW*.5,CY-EH,CX+EW*.5,CY-EH,CX+EW,CY);
+  ctx.bezierCurveTo(CX+EW*.5,CY+EH,CX-EW*.5,CY+EH,CX-EW,CY);
+  ctx.clip();
+
+  // Sclera — dark warm
+  const scl = ctx.createRadialGradient(CX,CY,0,CX,CY,EW);
+  scl.addColorStop(0,'rgba(215,135,35,0.95)');
+  scl.addColorStop(.25,'rgba(175,75,15,0.92)');
+  scl.addColorStop(.65,'rgba(80,18,10,0.95)');
+  scl.addColorStop(1,'rgba(18,4,4,1)');
+  ctx.fillStyle=scl; ctx.fillRect(CX-EW,CY-EH,EW*2,EH*2);
+
+  // Iris
+  ctx.beginPath(); ctx.arc(CX,CY,44,0,Math.PI*2);
+  const iris = ctx.createRadialGradient(CX-9,CY-9,2,CX,CY,44);
+  iris.addColorStop(0,'rgba(255,195,65,1)');
+  iris.addColorStop(.18,'rgba(225,115,18,0.97)');
+  iris.addColorStop(.48,'rgba(160,45,12,0.92)');
+  iris.addColorStop(.8,'rgba(95,18,40,0.92)');
+  iris.addColorStop(1,'rgba(42,8,28,1)');
+  ctx.fillStyle=iris; ctx.fill();
+
+  // Iris striations
+  for(let r=0;r<28;r++){
+    const ra=(r/28)*Math.PI*2;
+    ctx.strokeStyle=`rgba(255,145,0,${.12+Math.abs(Math.sin(ra*5))*.06})`;
+    ctx.lineWidth=.85;
+    ctx.beginPath();
+    ctx.moveTo(CX+Math.cos(ra)*16,CY+Math.sin(ra)*16);
+    ctx.lineTo(CX+Math.cos(ra)*42,CY+Math.sin(ra)*42);
+    ctx.stroke();
+  }
+
+  // Iris ring
+  ctx.strokeStyle='rgba(255,165,0,0.35)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(CX,CY,28,0,Math.PI*2); ctx.stroke();
+
+  // Pupil — slow breathing
+  const pr=13+Math.sin(t*.28)*2.5;
+  ctx.beginPath(); ctx.arc(CX,CY,pr,0,Math.PI*2);
+  ctx.fillStyle='#000'; ctx.fill();
+
+  // Pupil inner glow
+  const pg2 = ctx.createRadialGradient(CX,CY,0,CX,CY,pr+8);
+  pg2.addColorStop(0,'rgba(255,90,0,0.35)');
+  pg2.addColorStop(1,'rgba(255,40,0,0)');
+  ctx.fillStyle=pg2; ctx.beginPath(); ctx.arc(CX,CY,pr+10,0,Math.PI*2); ctx.fill();
+
+  // Catchlight
+  ctx.fillStyle='rgba(255,255,255,0.88)';
+  ctx.beginPath(); ctx.arc(CX-13,CY-13,5.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.beginPath(); ctx.arc(CX+10,CY+10,2.5,0,Math.PI*2); ctx.fill();
+
+  ctx.restore(); // unclip
+
+  // Eye outline
+  ctx.strokeStyle='rgba(235,155,55,0.75)'; ctx.lineWidth=2.8;
+  ctx.beginPath();
+  ctx.moveTo(CX-EW,CY);
+  ctx.bezierCurveTo(CX-EW*.5,CY-EH,CX+EW*.5,CY-EH,CX+EW,CY);
+  ctx.bezierCurveTo(CX+EW*.5,CY+EH,CX-EW*.5,CY+EH,CX-EW,CY);
+  ctx.stroke();
+
+  // Upper lashes
+  for(let l=0;l<14;l++){
+    const lt=-Math.PI+(l/13)*Math.PI;
+    const ex=CX+Math.cos(lt)*EW, ey=CY+Math.sin(lt)*EH;
+    const ang=Math.atan2(ey-CY,ex-CX)-.12;
+    const ll=9+Math.sin(l*1.4)*4.5;
+    ctx.strokeStyle=`rgba(220,115,35,${.65+Math.sin(l)*.2})`;
+    ctx.lineWidth=1.6; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(ex,ey);
+    ctx.lineTo(ex+Math.cos(ang)*ll,ey+Math.sin(ang)*ll);
+    ctx.stroke();
+  }
+
+  // Lower lashes (subtle)
+  for(let l=2;l<12;l++){
+    const lt=(l/13)*Math.PI;
+    const ex=CX+Math.cos(lt)*EW, ey=CY+Math.sin(lt)*EH;
+    const ang=Math.atan2(ey-CY,ex-CX)+.1;
+    ctx.strokeStyle='rgba(180,80,20,0.4)';
+    ctx.lineWidth=1.1;
+    ctx.beginPath();
+    ctx.moveTo(ex,ey);
+    ctx.lineTo(ex+Math.cos(ang)*5,ey+Math.sin(ang)*5);
+    ctx.stroke();
+  }
+
+  // Concentric glow rings
+  [1.3,1.6,2.1].forEach((sc,i)=>{
+    ctx.strokeStyle=`rgba(235,95,18,${.12-i*.03})`;
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(CX-EW*sc,CY);
+    ctx.bezierCurveTo(CX-EW*sc*.5,CY-EH*sc*.85,CX+EW*sc*.5,CY-EH*sc*.85,CX+EW*sc,CY);
+    ctx.bezierCurveTo(CX+EW*sc*.5,CY+EH*sc*.85,CX-EW*sc*.5,CY+EH*sc*.85,CX-EW*sc,CY);
+    ctx.stroke();
+  });
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════
+// RENDER LOOP
+// ══════════════════════════════════════════════════
+function render(){
+  ctx.clearRect(0,0,SIZE,SIZE);
+
+  // Ball interior background
+  const ballBg = ctx.createRadialGradient(CX,CY,0,CX,CY,SIZE/2);
+  ballBg.addColorStop(0,'rgba(6,3,10,0.55)');
+  ballBg.addColorStop(.7,'rgba(3,1,6,0.8)');
+  ballBg.addColorStop(1,'rgba(0,0,0,1)');
+  ctx.fillStyle=ballBg;
+  ctx.beginPath(); ctx.arc(CX,CY,SIZE/2,0,Math.PI*2); ctx.fill();
+
+  // Particles
+  const pa = transOut?Math.max(0.3,visionAlpha):transIn?Math.max(0.3,1-visionAlpha*.5):1;
+  particles.forEach(p=>{ p.update(); p.draw(pa); });
+
+  // Vision
+  PAGES[current].draw(t, visionAlpha);
+
+  // Transition out
+  if(transOut){
+    visionAlpha -= TSPEED;
+    if(visionAlpha<=0){
+      visionAlpha=0; transOut=false;
+      current=nextPage;
+      particles.forEach(p=>p.recollect());
+      updateUI();
+      transIn=true;
+    }
+  }
+  if(transIn){
+    visionAlpha+=TSPEED;
+    if(visionAlpha>=1){ visionAlpha=1; transIn=false; transitioning=false; }
+  }
+
+  t+=0.016;
+  requestAnimationFrame(render);
+}
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+function navigate(dir){
+  if(transitioning) return;
+  transitioning=true;
+  nextPage=((current+dir)+PAGES.length)%PAGES.length;
+  transOut=true; visionAlpha=1;
+  particles.forEach(p=>p.scatter());
+}
+
+function updateUI(){
+  const pg=PAGES[current];
+  const link=document.getElementById('page-link');
+  link.textContent=pg.name; link.href=pg.href;
+  pg.external?link.setAttribute('target','_blank'):link.removeAttribute('target');
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===current));
+  // Update ball glow
+  const glows=['rgba(139,0,0,','rgba(107,33,168,','rgba(91,33,182,','rgba(234,88,12,'];
+  const g=glows[current];
+  document.getElementById('ball').style.boxShadow=
+    `0 0 65px ${g}.28), 0 0 130px ${g}.12), inset 0 0 30px rgba(0,0,0,0.5)`;
+}
+
+// Touch/swipe
+let touchX=0;
+function touchStart(e){ touchX=e.touches[0].clientX; }
+function touchEnd(e){
+  const dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>38) navigate(dx<0?1:-1);
+}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft') navigate(-1);
+  if(e.key==='ArrowRight') navigate(1);
+});
+
+// Click ball to follow link
+document.getElementById('ball').addEventListener('click',()=>{
+  if(!transitioning) document.getElementById('page-link').click();
+});
+
+// ── INIT ──
+const dotsEl=document.getElementById('dots');
+PAGES.forEach((_,i)=>{
+  const d=document.createElement('div');
+  d.className='dot'+(i===0?' active':'');
+  dotsEl.appendChild(d);
+});
+
+initParticles(); updateUI(); render();
+
+function initParticles(){} // already ran above
+</script>
+</body>
+</html>
